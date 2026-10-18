@@ -1,0 +1,8 @@
+{
+  "name": "MYSTERYUM WALLET SOLANA",
+  "description": "Next-generation non-custodial Solana Web3 wallet with token swaps, tokenized xStocks, perpetuals, staking, AI Agent market auditor, encrypted chat, and official mobile publishing guides.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
