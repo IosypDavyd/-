@@ -9,11 +9,13 @@ import {
   Lock,
   Coins,
   QrCode,
+  Sparkles,
 } from 'lucide-react';
 import { WalletAccount, NetworkId, LanguageCode } from '../types/wallet';
 import { shortenAddress } from '../utils/crypto';
 import { FIAT_CURRENCIES } from '../utils/currencies';
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from '../utils/i18n';
+import { AvatarArtwork } from './AvatarArtwork';
 
 interface HeaderProps {
   account: WalletAccount;
@@ -26,6 +28,8 @@ interface HeaderProps {
   onOpenSupport: () => void;
   onOpenReceive: () => void;
   onOpenAccountModal: () => void;
+  onOpenGallery?: () => void;
+  onOpenVideo?: () => void;
   totalBalanceUsd: number;
   isLocked: boolean;
   onToggleLock: () => void;
@@ -42,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSupport,
   onOpenReceive,
   onOpenAccountModal,
+  onOpenGallery,
+  onOpenVideo,
   isLocked,
   onToggleLock,
 }) => {
@@ -69,9 +75,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-heading text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-                MYSTERYUM
+                ECOSYSTEM
                 <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/20">
-                  SOLANA
+                  WALLET SOLANA
                 </span>
               </span>
             </div>
@@ -83,6 +89,32 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center / Right controls */}
         <div className="flex items-center gap-2">
+          {/* Welcome Promo Video Button */}
+          {onOpenVideo && (
+            <button
+              onClick={onOpenVideo}
+              className="flex items-center gap-1.5 rounded-xl border border-cyan-400/50 bg-gradient-to-r from-cyan-950/90 to-indigo-950/80 px-2.5 py-1.5 text-xs font-bold text-cyan-300 hover:text-white hover:border-cyan-300 transition-all shadow-md shadow-cyan-950 cursor-pointer animate-pulse"
+              title="Дивитися привітальний промо-ролик ECOSYSTEM WALLET SOLANA"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Відео-ролик</span>
+            </button>
+          )}
+
+          {/* Active Avatar Medallion */}
+          <button
+            onClick={onOpenGallery || onOpenAccountModal}
+            className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-slate-900/90 p-1 pr-2 hover:border-cyan-400 hover:bg-slate-800 transition-all cursor-pointer group shadow-sm"
+            title="Active Avatar · Open NFT Gallery (25¢)"
+          >
+            <div className="h-7 w-7 rounded-lg overflow-hidden border border-cyan-400/60 bg-black shrink-0">
+              <AvatarArtwork theme={account.avatarTheme || 'cyber-king'} size="100%" showCrownGlow={false} />
+            </div>
+            <span className="hidden md:inline font-mono text-[10px] font-bold text-cyan-300 group-hover:text-cyan-200">
+              25¢ NFT
+            </span>
+          </button>
+
           {/* Address pill */}
           <div className="flex items-center rounded-lg border border-white/10 bg-slate-900/80 px-2.5 py-1.5 text-xs text-slate-200">
             <button

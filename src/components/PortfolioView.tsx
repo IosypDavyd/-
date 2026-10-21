@@ -21,6 +21,10 @@ import {
   Zap,
   AlertTriangle,
   X,
+  Download,
+  FileSpreadsheet,
+  Sliders,
+  PieChart,
 } from 'lucide-react';
 import {
   TokenAsset,
@@ -29,17 +33,26 @@ import {
   PerpPosition,
   StakingOption,
   NFTItem,
-  MysteryumCard,
+  EcosystemCard,
   TransactionRecord,
   LanguageCode,
   PriceAlert,
   TriggeredPriceAlert,
+  AvatarNFTItem,
 } from '../types/wallet';
 import { formatFiat } from '../utils/currencies';
 import { TRANSLATIONS } from '../utils/i18n';
 import { shortenAddress } from '../utils/crypto';
+import { AvatarArtwork } from './AvatarArtwork';
+import { AvatarBackground } from './AvatarBackground';
+import { downloadTransactionHistoryCsv } from '../utils/csvExportUtils';
+import { PortfolioPerformanceChart } from './PortfolioPerformanceChart';
+import { PortfolioRebalanceModal } from './modals/PortfolioRebalanceModal';
+import { MarketMoodSection } from './MarketMoodSection';
+import { PortfolioNewsSection } from './PortfolioNewsSection';
+import { VaultHealthAuditor } from './VaultHealthAuditor';
 
-export type PortfolioSubTab = 'tokens' | 'xstocks' | 'perps' | 'earn' | 'nft' | 'activity';
+export type PortfolioSubTab = 'tokens' | 'news' | 'xstocks' | 'perps' | 'earn' | 'nft' | 'activity';
 
 interface PortfolioViewProps {
   tokens: TokenAsset[];
@@ -48,7 +61,8 @@ interface PortfolioViewProps {
   perpPositions: PerpPosition[];
   stakingOptions: StakingOption[];
   nfts: NFTItem[];
-  cards: MysteryumCard[];
+  cards: EcosystemCard[];
+  avatars?: AvatarNFTItem[];
   transactions: TransactionRecord[];
   currency: string;
   language: LanguageCode;
@@ -58,6 +72,7 @@ interface PortfolioViewProps {
   onOpenSwap: (fromSymbol?: string) => void;
   onOpenStake: (providerId?: string) => void;
   onOpenPerp: (symbol?: string) => void;
+  onOpenGallery?: () => void;
   onClosePosition: (posId: string) => void;
   isLocked?: boolean;
   onTriggerUnlock?: () => void;
@@ -76,6 +91,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
   stakingOptions,
   nfts,
   cards,
+  avatars = [],
   transactions,
   currency,
   language,
@@ -85,6 +101,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
   onOpenSwap,
   onOpenStake,
   onOpenPerp,
+  onOpenGallery,
   onClosePosition,
   isLocked = false,
   onTriggerUnlock,
@@ -96,7 +113,22 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<PortfolioSubTab>('tokens');
   const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const [showAllCardsModal, setShowAllCardsModal] = useState(false);
+  const [exportedCsvNotification, setExportedCsvNotification] = useState<string | null>(null);
+  const [isRebalanceModalOpen, setIsRebalanceModalOpen] = useState(false);
   const t = TRANSLATIONS[language];
+
+  const handleExportCsv = () => {
+    try {
+      const filename = downloadTransactionHistoryCsv(transactions);
+      setExportedCsvNotification(filename);
+      setTimeout(() => {
+        setExportedCsvNotification(null);
+      }, 4000);
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+    }
+  };
 
   // Calculate total portfolio valuation in USD
   const tokensValuation = tokens.reduce((acc, t) => acc + t.balance * t.usdPrice, 0);
@@ -112,7 +144,14 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
   const enabledAlertsCount = priceAlerts.filter((a) => a.enabled).length;
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="relative space-y-6 pb-24">
+      {/* Ambient Avatar Background Watermark */}
+      <AvatarBackground
+        theme={activeCard.avatarTheme || 'cyber-king'}
+        opacity={0.06}
+        position="top-right"
+      />
+
       {/* Real-Time Triggered Price Alert Banner */}
       {triggeredAlerts.length > 0 && (
         <div className="space-y-2">
@@ -173,6 +212,29 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
         </div>
       )}
 
+      {/* Global CSV Export Notification Banner */}
+      {exportedCsvNotification && (
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-500/50 bg-gradient-to-r from-emerald-950/90 via-slate-900/90 to-emerald-950/70 p-3.5 text-xs text-emerald-300 shadow-xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-bold text-white">Full Transaction History Exported</p>
+              <p className="font-mono text-[11px] text-slate-300 truncate">
+                Saved: <strong className="text-emerald-300">{exportedCsvNotification}</strong>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setExportedCsvNotification(null)}
+            className="rounded-lg p-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Vault Balance Card */}
       <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#131b2e] to-[#0c101a] p-6 shadow-2xl">
         {/* Ambient background glows */}
@@ -199,6 +261,28 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
               >
                 <Bell className="h-3 w-3 text-amber-400" />
                 <span>Price Alerts ({enabledAlertsCount})</span>
+              </button>
+
+              {/* Rebalance Portfolio Button */}
+              <button
+                type="button"
+                onClick={() => setIsRebalanceModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/15 hover:bg-purple-500/25 px-2.5 py-0.5 text-[11px] font-bold text-purple-300 border border-purple-500/30 transition-colors cursor-pointer shadow-sm"
+                title="Target percentage rebalancing and trade generator"
+              >
+                <Sliders className="h-3 w-3 text-purple-400" />
+                <span>Rebalance Portfolio</span>
+              </button>
+
+              {/* Tax & Records CSV Export Button */}
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 px-2.5 py-0.5 text-[11px] font-bold text-cyan-300 border border-cyan-500/30 transition-colors cursor-pointer shadow-sm"
+                title="Export full transaction history as CSV for tax and record-keeping"
+              >
+                <Download className="h-3 w-3 text-cyan-400" />
+                <span>Export CSV ({transactions.length} txs)</span>
               </button>
             </div>
 
@@ -277,61 +361,158 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
         </div>
       </div>
 
-      {/* Mysteryum Virtual Cards Showcase (1 / 8 Series) */}
-      <div className="rounded-3xl border border-white/10 bg-[#0f1420]/80 p-5">
-        <div className="flex items-center justify-between mb-3">
+      {/* Visual Recharts Portfolio Performance Chart */}
+      <PortfolioPerformanceChart
+        currentBalanceUsd={totalValuationUsd}
+        transactions={transactions}
+        currency={currency}
+        isLocked={isLocked}
+      />
+
+      {/* Gemini AI Powered Market Mood & Radar Sentiment Section */}
+      <MarketMoodSection
+        tokens={tokens}
+        priceAlerts={priceAlerts}
+        currency={currency}
+      />
+
+      {/* AI Vault Health Auditor (Gemini Powered Token Concentration, Liquidity & Security) */}
+      <VaultHealthAuditor
+        tokens={tokens}
+        stakingOptions={stakingOptions}
+        currency={currency}
+        onOpenRebalance={() => setIsRebalanceModalOpen(true)}
+        onOpenSwap={(sym) => onOpenSwap(sym)}
+      />
+
+      {/* Ecosystem Virtual Cards Showcase (1 / 8 Series) */}
+      <div className="rounded-3xl border border-white/10 bg-[#0f1420]/80 p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-cyan-400" />
             <h2 className="font-heading text-sm font-bold text-white uppercase tracking-wider">
               My Cards · {activeCardIndex + 1} / {cards.length}
             </h2>
+            <span className="rounded-full bg-cyan-950/80 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-mono text-cyan-300">
+              Avatar NFT Backed
+            </span>
           </div>
-          <div className="flex items-center gap-1">
-            {cards.map((_, i) => (
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAllCardsModal(true)}
+              className="rounded-xl border border-white/10 bg-slate-900/80 hover:bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
+            >
+              View All 8 Cards
+            </button>
+
+            {onOpenGallery && (
               <button
-                key={i}
-                onClick={() => setActiveCardIndex(i)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  i === activeCardIndex ? 'w-5 bg-cyan-400' : 'w-2 bg-slate-700 hover:bg-slate-500'
-                }`}
-                aria-label={`Select card ${i + 1}`}
-              />
-            ))}
+                onClick={onOpenGallery}
+                className="flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/60 hover:bg-cyan-900/80 px-2.5 py-1 text-xs font-bold text-cyan-300 transition-all cursor-pointer shadow-sm shadow-cyan-950"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+                <span>Avatar Gallery (25¢)</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-1 ml-1">
+              {cards.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveCardIndex(i)}
+                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                    i === activeCardIndex ? 'w-5 bg-cyan-400' : 'w-2 bg-slate-700 hover:bg-slate-500'
+                  }`}
+                  aria-label={`Select card ${i + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Active Card Preview */}
+        {/* Active Card Preview with Avatar Artwork Embedded */}
         <div
-          className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${activeCard.color} p-5 shadow-xl transition-all`}
+          className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${activeCard.color} p-5 sm:p-6 shadow-2xl transition-all group`}
         >
-          <div className="flex items-center justify-between">
+          {/* Subtle Cyber Grid Texture */}
+          <div className="pointer-events-none absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" />
+
+          {/* Top Row: Series, Title & Tier */}
+          <div className="relative z-10 flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                 {activeCard.series}
               </span>
-              <p className="font-heading text-sm font-extrabold text-white tracking-wide">
+              <p className="font-heading text-sm sm:text-base font-extrabold text-white tracking-wide">
                 {activeCard.title}
               </p>
             </div>
-            <span className="rounded-lg bg-black/40 px-2 py-1 text-[10px] font-mono font-bold text-cyan-300 border border-white/10">
-              {activeCard.tier}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-lg bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[11px] font-mono font-bold text-cyan-300 border border-white/10 shadow-sm">
+                {activeCard.tier}
+              </span>
+            </div>
           </div>
 
-          <div className="my-6">
-            <p className="font-mono text-lg sm:text-xl font-bold tracking-widest text-white select-all">
-              {activeCard.cardNumber}
-            </p>
+          {/* Middle Row: EMV Chip, Card Number, and Avatar Artwork Medallion */}
+          <div className="relative z-10 flex items-center justify-between my-5 sm:my-6 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {/* Metallic Gold EMV Chip */}
+                <div className="h-7 w-9 rounded-md bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 border border-amber-300/80 shadow-md flex items-center justify-center">
+                  <div className="h-4 w-6 border-t border-b border-amber-600/40" />
+                </div>
+                <span className="text-[10px] text-white/60 font-mono tracking-wider">SOLANA · CONTACTLESS</span>
+              </div>
+              <p className="font-mono text-base sm:text-xl font-bold tracking-widest text-white select-all">
+                {activeCard.cardNumber}
+              </p>
+              {activeCard.avatarName && (
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-mono text-cyan-300 border border-white/10">
+                  <Sparkles className="h-3 w-3 text-cyan-400" />
+                  <span>Avatar: {activeCard.avatarName}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Embedded Avatar NFT Artwork Medallion */}
+            <div className="relative shrink-0 flex flex-col items-center">
+              <div
+                onClick={onOpenGallery}
+                className="relative h-18 w-18 sm:h-22 sm:w-22 rounded-2xl overflow-hidden border-2 border-cyan-400/60 bg-slate-950/90 shadow-2xl ring-2 ring-cyan-500/20 cursor-pointer group hover:scale-105 hover:border-cyan-300 transition-all"
+                title="Click to manage or change avatar in Gallery"
+              >
+                <AvatarArtwork
+                  theme={activeCard.avatarTheme || 'cyber-king'}
+                  size="100%"
+                  showCrownGlow={true}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-center pb-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[8px] font-mono text-cyan-300 uppercase font-extrabold tracking-wider">
+                    25¢ NFT
+                  </span>
+                </div>
+              </div>
+              <span className="mt-1 text-[9px] font-mono text-cyan-200/80 uppercase font-bold">
+                Card Avatar
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-end justify-between text-xs">
+          {/* Bottom Row: Holder & Balance */}
+          <div className="relative z-10 flex items-end justify-between text-xs pt-2 border-t border-white/10">
             <div>
               <p className="text-[10px] text-white/60 uppercase">Card Holder</p>
-              <p className="font-mono font-bold text-white">{activeCard.holder}</p>
+              <p className="font-mono font-bold text-white tracking-wide">{activeCard.holder}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-white/60 uppercase">Expires</p>
+              <p className="font-mono text-xs text-white/80">{activeCard.expiry}</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] text-white/60 uppercase">Balance</p>
-              <p className="font-mono font-bold text-emerald-300">
+              <p className="font-mono font-bold text-emerald-300 text-sm sm:text-base">
                 {isLocked ? '••••••••' : `$${activeCard.balanceUsd.toLocaleString()}`}
               </p>
             </div>
@@ -344,6 +525,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-white/10 no-scrollbar">
           {[
             { id: 'tokens', label: t.tokens, count: tokens.length },
+            { id: 'news', label: 'News', count: 8 },
             { id: 'xstocks', label: t.xStocks, count: xStocks.length },
             { id: 'perps', label: t.perps, count: perpMarkets.length },
             { id: 'earn', label: t.earn, count: stakingOptions.length },
@@ -370,6 +552,28 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
         {/* Sub-tab 1: Tokens */}
         {activeSubTab === 'tokens' && (
           <div className="space-y-2">
+            {/* Quick Rebalance Callout Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-purple-950/40 p-3 sm:px-4 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/40 shrink-0">
+                  <Sliders className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-white">Target Allocation Rebalancer</span>
+                  <p className="text-[11px] text-slate-400">
+                    Set target percentages for SOL, USDC, and ecosystem tokens to optimize risk and yield
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRebalanceModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-purple-950 transition-all cursor-pointer shrink-0"
+              >
+                <span>Rebalance Now</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
             {tokens.map((token) => (
               <div
                 key={token.symbol}
@@ -433,6 +637,14 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
               </div>
             ))}
           </div>
+        )}
+
+        {/* Sub-tab: Crypto News & Market Catalysts */}
+        {activeSubTab === 'news' && (
+          <PortfolioNewsSection
+            tokens={tokens}
+            onSelectTokenTrade={(sym) => onOpenSwap(sym)}
+          />
         )}
 
         {/* Sub-tab 2: xStocks (Tokenized Equities on Solana) */}
@@ -640,16 +852,36 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
-                    <span className="text-slate-400">
-                      Currently Staked:{' '}
-                      <strong className="text-white font-mono">{opt.stakedAmount} SOL</strong>
-                    </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-white/5 text-xs">
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-400">
+                        Currently Staked:{' '}
+                        <strong className="text-white font-mono">{opt.stakedAmount} SOL</strong>
+                      </span>
+
+                      {opt.autoStakeEnabled ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-purple-950/80 border border-purple-500/40 px-2 py-0.5 text-[10px] font-mono text-purple-300">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>Auto-Staking Active ({opt.autoStakeThreshold ?? 0.05} SOL)</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono text-slate-500">
+                          Auto-Staking Off
+                        </span>
+                      )}
+
+                      {(opt.accruedRewardsSol ?? 0) > 0 && (
+                        <span className="text-[10px] font-mono text-emerald-400">
+                          (+{(opt.accruedRewardsSol ?? 0).toFixed(4)} accrued)
+                        </span>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => onOpenStake(opt.id)}
-                      className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-1.5 font-bold text-white transition-colors cursor-pointer"
+                      className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-1.5 font-bold text-white transition-colors cursor-pointer self-start sm:self-auto"
                     >
-                      Stake SOL
+                      {opt.autoStakeEnabled ? 'Manage Stake & Auto' : 'Stake SOL'}
                     </button>
                   </div>
                 </div>
@@ -658,47 +890,147 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
           </div>
         )}
 
-        {/* Sub-tab 5: NFTs */}
+        {/* Sub-tab 5: NFTs & 25¢ Avatar Mint */}
         {activeSubTab === 'nft' && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {nfts.map((nft) => (
-              <div
-                key={nft.id}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 group hover:border-cyan-500/40 transition-all"
-              >
-                <div className="aspect-square w-full overflow-hidden bg-slate-800">
-                  <img
-                    src={nft.image}
-                    alt={nft.name}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-3">
-                  <p className="text-[10px] text-cyan-400 font-semibold truncate">
-                    {nft.collection}
-                  </p>
-                  <p className="font-heading text-xs font-bold text-white truncate mt-0.5">
-                    {nft.name}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                    <span className="text-[11px] text-slate-400">Floor</span>
-                    <span className="font-mono font-bold text-emerald-400">
-                      {nft.floorPriceSol} SOL
-                    </span>
+          <div className="space-y-6">
+            {/* 25¢ NFT Avatar Official Collection Banner */}
+            <div className="relative overflow-hidden rounded-3xl border border-cyan-500/30 bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 p-5 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-cyan-300">
+                    <Sparkles className="h-3 w-3 text-cyan-400 animate-pulse" />
+                    <span>25¢ MINT SPECIAL</span>
                   </div>
+                  <h3 className="font-heading text-lg font-bold text-white">
+                    Official Solana NFT Avatars (25 Cents)
+                  </h3>
+                  <p className="text-xs text-slate-300 max-w-xl">
+                    Mint and customize your wallet & virtual card appearance with 8 unique on-chain Solana monarch avatars for just <strong className="text-cyan-300 font-bold">$0.25 USD</strong>.
+                  </p>
                 </div>
+
+                {onOpenGallery && (
+                  <button
+                    onClick={onOpenGallery}
+                    className="shrink-0 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:opacity-95 px-4 py-2.5 text-xs font-extrabold text-black transition-all shadow-lg shadow-cyan-500/25 cursor-pointer"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Open Mint Gallery (25¢)</span>
+                  </button>
+                )}
               </div>
-            ))}
+
+              {/* 25¢ Avatars Carousel / Grid Preview */}
+              {avatars.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {avatars.slice(0, 4).map((av) => (
+                    <div
+                      key={av.id}
+                      onClick={onOpenGallery}
+                      className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-slate-950/60 p-2 hover:border-cyan-500/40 transition-all cursor-pointer group"
+                    >
+                      <div className="h-10 w-10 rounded-lg overflow-hidden bg-slate-900 border border-white/10 shrink-0">
+                        <AvatarArtwork theme={av.theme} size="100%" showCrownGlow={false} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
+                          {av.name.split('#')[0]}
+                        </p>
+                        <p className="text-[10px] font-mono text-emerald-400">
+                          {av.isMinted ? 'Minted · 25¢' : '25¢ Mint'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Other Solana NFTs */}
+            <div>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Vault Solana NFT Collectibles
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {nfts.map((nft) => (
+                  <div
+                    key={nft.id}
+                    className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 group hover:border-cyan-500/40 transition-all"
+                  >
+                    <div className="aspect-square w-full overflow-hidden bg-slate-800">
+                      <img
+                        src={nft.image}
+                        alt={nft.name}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <p className="text-[10px] text-cyan-400 font-semibold truncate">
+                        {nft.collection}
+                      </p>
+                      <p className="font-heading text-xs font-bold text-white truncate mt-0.5">
+                        {nft.name}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between text-xs border-t border-white/5 pt-2">
+                        <span className="text-[11px] text-slate-400">Floor</span>
+                        <span className="font-mono font-bold text-emerald-400">
+                          {nft.floorPriceSol} SOL
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Sub-tab 6: Activity */}
         {activeSubTab === 'activity' && (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* Tax & Accounting Export Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-[#0c1424] via-slate-900 to-[#0c1424] p-4 shadow-lg">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-950/80 border border-cyan-400/40 text-cyan-400">
+                  <FileSpreadsheet className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-heading text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                    <span>Tax & Accounting Reports</span>
+                    <span className="rounded bg-emerald-950/80 border border-emerald-500/40 px-1.5 py-0.2 text-[9px] font-mono text-emerald-300">
+                      RFC 4180 CSV
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Export all on-chain swaps, transfers, staking, and mints with UTC timestamps & classifications
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleExportCsv}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 px-4 py-2 text-xs font-bold text-black transition-all shadow-md shadow-cyan-950 cursor-pointer shrink-0"
+                title="Download CSV report for tax, audit and accountant software (Koinly, CoinTracker, Excel)"
+              >
+                <Download className="h-4 w-4" />
+                <span>Export CSV Report</span>
+              </button>
+            </div>
+
+            {/* Notification when CSV is exported */}
+            {exportedCsvNotification && (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-950/60 p-3 text-xs text-emerald-300 animate-in fade-in slide-in-from-top-1 duration-200">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span className="font-mono truncate">
+                  Exported successfully: <strong className="text-white">{exportedCsvNotification}</strong>
+                </span>
+              </div>
+            )}
+
             {transactions.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-900/50 p-3.5"
+                className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-900/50 p-3.5 hover:border-cyan-500/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div
@@ -748,21 +1080,145 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
         )}
       </div>
 
-      {/* Official Mysteryum Wallet Link Banner */}
+      {/* Modal: View All 8 Cards Showcase with Avatar on Every Card */}
+      {showAllCardsModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-3xl border border-white/10 bg-[#0c101a] p-6 shadow-2xl space-y-4 overflow-hidden">
+            <button
+              onClick={() => setShowAllCardsModal(false)}
+              className="absolute right-4 top-4 rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pr-8">
+              <div>
+                <h3 className="font-heading text-xl font-bold text-white flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-cyan-400" />
+                  <span>All 8 Ecosystem Virtual Cards</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Each card is uniquely branded with its official 25¢ NFT avatar artwork
+                </p>
+              </div>
+
+              {onOpenGallery && (
+                <button
+                  onClick={() => {
+                    setShowAllCardsModal(false);
+                    onOpenGallery();
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/60 hover:bg-cyan-900 px-3 py-1.5 text-xs font-bold text-cyan-300 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>Avatar Gallery (25¢)</span>
+                </button>
+              )}
+            </div>
+
+            {/* Grid of all 8 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-1">
+              {cards.map((card, idx) => {
+                const isSelected = idx === activeCardIndex;
+                return (
+                  <div
+                    key={card.id}
+                    onClick={() => {
+                      setActiveCardIndex(idx);
+                      setShowAllCardsModal(false);
+                    }}
+                    className={`relative rounded-2xl border bg-gradient-to-br ${card.color} p-4 sm:p-5 shadow-xl transition-all cursor-pointer group hover:scale-[1.01] ${
+                      isSelected ? 'ring-2 ring-cyan-400 border-cyan-400' : 'hover:border-white/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-white/70">
+                          {card.series}
+                        </span>
+                        <p className="font-heading text-xs sm:text-sm font-extrabold text-white truncate">
+                          {card.title}
+                        </p>
+                      </div>
+                      <span className="rounded bg-black/40 px-2 py-0.5 text-[9px] font-mono font-bold text-cyan-300 border border-white/10">
+                        {card.tier}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between my-2">
+                      <div>
+                        <p className="font-mono text-xs sm:text-sm font-bold tracking-widest text-white">
+                          {card.cardNumber}
+                        </p>
+                        <p className="text-[10px] text-cyan-300 font-mono mt-0.5">
+                          Avatar: {card.avatarName || 'Official Sovereign'}
+                        </p>
+                      </div>
+
+                      {/* Card Avatar Artwork */}
+                      <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden border border-cyan-400/50 bg-slate-950 shadow-md shrink-0">
+                        <AvatarArtwork theme={card.avatarTheme || 'cyber-king'} size="100%" showCrownGlow={false} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between text-xs pt-2 border-t border-white/10 mt-3">
+                      <div>
+                        <span className="text-[9px] text-white/60 uppercase">Holder</span>
+                        <p className="font-mono font-bold text-white text-[11px] truncate max-w-[120px]">
+                          {card.holder}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[9px] text-white/60 uppercase">Balance</span>
+                        <p className="font-mono font-bold text-emerald-300 text-xs sm:text-sm">
+                          {isLocked ? '••••••••' : `$${card.balanceUsd.toLocaleString()}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 rounded-full bg-cyan-500 text-black p-0.5" title="Currently Active Card">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Ecosystem Wallet Link Banner */}
       <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 text-center space-y-2">
         <a
-          href="https://mysteryum-wallet.lovable.app"
+          href="https://mysteryum.io"
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:underline font-semibold"
         >
-          <span>mysteryum-wallet.lovable.app</span>
+          <span>mysteryum.io</span>
           <ExternalLink className="h-3 w-3" />
         </a>
-        <p className="text-[11px] text-slate-500">
-          Solana Full Control · Non-Custodial Vault · Your keys stay yours
+        <p className="text-[11px] text-slate-400">
+          ECOSYSTEM WALLET SOLANA · Non-Custodial Vault · Your keys stay yours
         </p>
       </div>
+
+      {/* Target Allocation Portfolio Rebalancer Modal */}
+      <PortfolioRebalanceModal
+        isOpen={isRebalanceModalOpen}
+        onClose={() => setIsRebalanceModalOpen(false)}
+        tokens={tokens}
+        currency={currency}
+        onExecuteTrade={(fromSymbol, toSymbol) => {
+          onOpenSwap(fromSymbol);
+        }}
+      />
     </div>
   );
 };

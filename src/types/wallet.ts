@@ -18,6 +18,16 @@ export type LanguageCode =
   | 'ko'
   | 'id';
 
+export type AvatarTheme =
+  | 'cyber-king'
+  | 'neon-grail'
+  | 'shield-guardian'
+  | 'golden-midas'
+  | 'frost-emperor'
+  | 'protocol-guardian'
+  | 'diamond-ace'
+  | 'shadow-spade';
+
 export interface WalletAccount {
   id: string;
   name: string;
@@ -25,6 +35,7 @@ export interface WalletAccount {
   seedPhrase: string[];
   privateKeyHex: string;
   createdAt: number;
+  avatarTheme?: AvatarTheme;
 }
 
 export interface TokenAsset {
@@ -84,6 +95,10 @@ export interface StakingOption {
   provider: string;
   stakedAmount: number;
   description: string;
+  autoStakeEnabled?: boolean;
+  autoStakeThreshold?: number; // threshold in SOL to trigger auto-compound re-stake
+  accruedRewardsSol?: number; // un-compounded yield accrued in SOL
+  totalCompoundCount?: number; // count of completed auto-restakes
 }
 
 export interface NFTItem {
@@ -96,7 +111,7 @@ export interface NFTItem {
   attributes: { trait_type: string; value: string }[];
 }
 
-export interface MysteryumCard {
+export interface EcosystemCard {
   id: number;
   title: string;
   series: string;
@@ -106,11 +121,41 @@ export interface MysteryumCard {
   color: string;
   balanceUsd: number;
   expiry: string;
+  avatarTheme?: AvatarTheme;
+  avatarName?: string;
+}
+
+export type MysteryumCard = EcosystemCard;
+
+export interface AvatarNFTItem {
+  id: string;
+  name: string;
+  theme: AvatarTheme;
+  tier: 'Mythic' | 'Legendary' | 'Rare' | 'Special';
+  title: string;
+  description: string;
+  priceUsd: number; // 0.25 (25 cents)
+  priceSol: number; // 0.00135 SOL
+  priceUsdc: number; // 0.25 USDC
+  priceKpgm: number; // 25 KPGM
+  mintAddress: string;
+  isMinted: boolean;
+  isEquipped: boolean;
+  mintedAt?: number;
+  txSignature?: string;
+  cardAssignmentId?: number;
+  traits: {
+    crown: string;
+    eyes: string;
+    armor: string;
+    rarity: string;
+    powerLevel: number;
+  };
 }
 
 export interface TransactionRecord {
   id: string;
-  type: 'send' | 'receive' | 'swap' | 'stake';
+  type: 'send' | 'receive' | 'swap' | 'stake' | 'mint';
   symbol: string;
   amount: number;
   amountUsd: number;

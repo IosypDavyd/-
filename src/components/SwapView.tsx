@@ -9,20 +9,26 @@ import {
   AlertCircle,
   ExternalLink,
 } from 'lucide-react';
-import { TokenAsset } from '../types/wallet';
+import { TokenAsset, AvatarTheme } from '../types/wallet';
 import { calculateSwapOutput } from '../utils/crypto';
 import confetti from 'canvas-confetti';
+import { AvatarArtwork } from './AvatarArtwork';
+import { AvatarBackground } from './AvatarBackground';
 
 interface SwapViewProps {
   tokens: TokenAsset[];
   onExecuteSwap: (fromSymbol: string, toSymbol: string, inAmount: number, outAmount: number) => void;
   defaultFrom?: string;
+  avatarTheme?: AvatarTheme;
+  onOpenGallery?: () => void;
 }
 
 export const SwapView: React.FC<SwapViewProps> = ({
   tokens,
   onExecuteSwap,
   defaultFrom = 'SOL',
+  avatarTheme = 'cyber-king',
+  onOpenGallery,
 }) => {
   const [fromSymbol, setFromSymbol] = useState(defaultFrom);
   const [toSymbol, setToSymbol] = useState(defaultFrom === 'USDC' ? 'SOL' : 'USDC');
@@ -71,7 +77,39 @@ export const SwapView: React.FC<SwapViewProps> = ({
   };
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 pb-24">
+    <div className="relative mx-auto max-w-lg space-y-4 pb-24">
+      {/* Ambient Avatar Background Watermark */}
+      <AvatarBackground theme={avatarTheme} opacity={0.06} position="top-right" />
+
+      {/* Mysteryum VIP Cardholder Badge */}
+      <div className="relative z-10 flex items-center justify-between rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-indigo-950/40 to-slate-900/60 p-3 shadow-md">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-xl overflow-hidden border border-cyan-400/50 bg-black shrink-0">
+            <AvatarArtwork theme={avatarTheme} size="100%" showCrownGlow={false} />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-white">VIP Cardholder Tier</span>
+              <span className="rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 text-[9px] font-mono font-bold">
+                0% EXTRA FEES
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Active Avatar discount & priority routing applied
+            </p>
+          </div>
+        </div>
+
+        {onOpenGallery && (
+          <button
+            onClick={onOpenGallery}
+            className="rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 px-2 py-1 text-[10px] font-bold text-cyan-300 transition-all cursor-pointer shrink-0"
+          >
+            Avatars 25¢
+          </button>
+        )}
+      </div>
+
       {/* Swap Container Card */}
       <div className="rounded-3xl border border-white/10 bg-[#0f1420]/90 p-6 shadow-2xl backdrop-blur-xl">
         <div className="flex items-center justify-between mb-4">

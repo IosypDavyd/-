@@ -38,7 +38,7 @@ export const AiAgentView: React.FC<AiAgentViewProps> = ({ tokens }) => {
   >([
     {
       sender: 'agent',
-      text: 'Greetings. I am the MYSTERYUM Solana AI Agent. I monitor on-chain safety, analyze smart contract authorities, and audit your wallet risk in real-time. How can I assist your Solana operations?',
+      text: 'Greetings. I am the ECOSYSTEM Solana AI Agent. I monitor on-chain safety, analyze smart contract authorities, and audit your wallet risk in real-time. How can I assist your Solana operations?',
       timestamp: Date.now() - 60000,
     },
   ]);
@@ -112,7 +112,7 @@ export const AiAgentView: React.FC<AiAgentViewProps> = ({ tokens }) => {
           'xStocks provide 24/7 tokenized synthetic exposure to US indices (SPYx, QQQx), mega-caps (NVDAx, AAPLx, TSLAx), and Gold (GLDx) on Solana. They settle instantly in USDC without traditional brokerage lockups.';
       } else if (lower.includes('audit') || lower.includes('safe')) {
         reply =
-          'Your overall Mysteryum Vault health score is 96/100 (Optimal). All connected tokens have verified SPL metadata, and no unverified mint contracts have permission to spend your SOL.';
+          'Your overall Ecosystem Vault health score is 96/100 (Optimal). All connected tokens have verified SPL metadata, and no unverified mint contracts have permission to spend your SOL.';
       } else {
         reply =
           `I analyzed your query regarding "${userText}". On the Solana network, average block times are ~400ms and priority fees are ~0.000005 SOL. Your portfolio remains safe and protected by non-custodial local keys.`;
@@ -135,7 +135,7 @@ export const AiAgentView: React.FC<AiAgentViewProps> = ({ tokens }) => {
           </div>
           <div>
             <h2 className="font-heading text-xl font-bold text-white flex items-center gap-2">
-              MYSTERYUM AI AGENT
+              ECOSYSTEM AI AGENT
               <span className="rounded bg-cyan-950 px-2 py-0.5 text-[10px] font-mono text-cyan-300 border border-cyan-500/30">
                 ACTIVE
               </span>

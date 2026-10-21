@@ -7,11 +7,21 @@ import {
   Compass,
   Settings,
   LifeBuoy,
+  Sparkles,
+  Globe,
 } from 'lucide-react';
 import { LanguageCode } from '../types/wallet';
 import { TRANSLATIONS } from '../utils/i18n';
 
-export type ActiveTab = 'portfolio' | 'swap' | 'aiAgent' | 'chat' | 'explore' | 'settings' | 'support';
+export type ActiveTab =
+  | 'portfolio'
+  | 'gallery'
+  | 'swap'
+  | 'chat'
+  | 'explore'
+  | 'portal'
+  | 'settings'
+  | 'support';
 
 interface BottomNavProps {
   activeTab: ActiveTab;
@@ -28,12 +38,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   const navItems: { id: ActiveTab; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'portfolio', label: t.portfolio, icon: Wallet },
+    { id: 'gallery', label: t.gallery || '25¢ NFT', icon: Sparkles },
     { id: 'swap', label: t.swap, icon: ArrowLeftRight },
-    { id: 'aiAgent', label: t.aiAgent, icon: Bot },
-    { id: 'chat', label: t.chat, icon: MessageSquare },
-    { id: 'explore', label: t.explore, icon: Compass },
+    { id: 'chat', label: language === 'uk' ? 'ШІ & Чат' : 'AI & Chat', icon: MessageSquare },
+    { id: 'explore', label: language === 'uk' ? 'Веб-3 & DEX' : 'Web-3 Hub', icon: Compass },
+    { id: 'portal', label: language === 'uk' ? 'Портал' : 'Portal', icon: Globe },
     { id: 'settings', label: t.settings, icon: Settings },
-    { id: 'support', label: 'Support', icon: LifeBuoy },
   ];
 
   return (
@@ -41,7 +51,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0a0d14]/95 backdrop-blur-xl px-2 py-2"
       aria-label="Wallet workspace"
     >
-      <div className="mx-auto flex max-w-lg items-center justify-around gap-1 sm:max-w-2xl">
+      <div className="mx-auto flex max-w-xl items-center justify-around gap-1 sm:max-w-3xl">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -49,15 +59,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <button
               key={item.id}
               onClick={() => onChangeTab(item.id)}
-              className={`flex flex-col items-center justify-center rounded-xl px-2.5 py-1.5 transition-all text-xs font-medium cursor-pointer ${
+              className={`flex flex-col items-center justify-center rounded-xl px-2 py-1.5 transition-all text-xs font-medium cursor-pointer ${
                 isActive
-                  ? 'text-cyan-400 bg-cyan-950/50 border border-cyan-500/30 shadow-sm shadow-cyan-950'
+                  ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-500/40 shadow-sm shadow-cyan-950'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon className={`h-4 w-4 ${isActive ? 'text-cyan-400 scale-110' : 'text-slate-400'}`} />
-              <span className="mt-1 text-[11px] leading-tight truncate max-w-[64px]">
+              <span className="mt-1 text-[10px] leading-tight truncate max-w-[62px]">
                 {item.label}
               </span>
             </button>

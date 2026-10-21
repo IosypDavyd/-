@@ -17,6 +17,9 @@ import { PerpTradeModal } from './components/modals/PerpTradeModal';
 import { AccountModal } from './components/modals/AccountModal';
 import { BiometricUnlockModal } from './components/modals/BiometricUnlockModal';
 import { PriceAlertsModal } from './components/modals/PriceAlertsModal';
+import { AvatarGalleryView } from './components/AvatarGalleryView';
+import { EcosystemPortalView } from './components/EcosystemPortalView';
+import { WelcomeVideoModal } from './components/modals/WelcomeVideoModal';
 
 import {
   WalletAccount,
@@ -27,6 +30,9 @@ import {
   TransactionRecord,
   PriceAlert,
   TriggeredPriceAlert,
+  AvatarNFTItem,
+  AvatarTheme,
+  MysteryumCard,
 } from './types/wallet';
 import {
   INITIAL_TOKENS,
@@ -35,6 +41,7 @@ import {
   STAKING_OPTIONS,
   INITIAL_NFTS,
   MYSTERYUM_CARDS,
+  INITIAL_AVATAR_NFTS,
   INITIAL_TRANSACTIONS,
 } from './data/mockData';
 import {
@@ -42,6 +49,7 @@ import {
   deriveSolanaAddressFromSeed,
 } from './utils/crypto';
 import { evaluatePriceAlerts } from './utils/priceAlerts';
+import { assignAvatarToCard } from './utils/avatarUtils';
 
 const DEFAULT_PRICE_ALERTS: PriceAlert[] = [
   {
@@ -135,6 +143,18 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
   });
 
+  // Mysteryum 8 Virtual Cards state
+  const [cards, setCards] = useState<MysteryumCard[]>(() => {
+    const saved = localStorage.getItem('mysteryum_cards');
+    return saved ? JSON.parse(saved) : MYSTERYUM_CARDS;
+  });
+
+  // Official 25¢ NFT Avatars state
+  const [avatars, setAvatars] = useState<AvatarNFTItem[]>(() => {
+    const saved = localStorage.getItem('mysteryum_avatar_nfts');
+    return saved ? JSON.parse(saved) : INITIAL_AVATAR_NFTS;
+  });
+
   // Modal controls
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [sendDefaultSymbol, setSendDefaultSymbol] = useState('SOL');
@@ -150,6 +170,7 @@ export default function App() {
 
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [swapDefaultFrom, setSwapDefaultFrom] = useState('SOL');
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   // Real-time Price Alerts state
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => {
@@ -205,6 +226,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('mysteryum_txs', JSON.stringify(transactions));
   }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('mysteryum_cards', JSON.stringify(cards));
+  }, [cards]);
+
+  useEffect(() => {
+    localStorage.setItem('mysteryum_avatar_nfts', JSON.stringify(avatars));
+  }, [avatars]);
 
   useEffect(() => {
     localStorage.setItem('mysteryum_price_alerts', JSON.stringify(priceAlerts));
@@ -407,6 +436,50 @@ export default function App() {
     setTransactions((prev) => [newTx, ...prev]);
   };
 
+  const handleUpdateAutoStake = (providerId: string, enabled: boolean, thresholdSol: number) => {
+    setStakingOptions((prev: any[]) =>
+      prev.map((opt) =>
+        opt.id === providerId
+          ? { ...opt, autoStakeEnabled: enabled, autoStakeThreshold: thresholdSol }
+          : opt
+      )
+    );
+  };
+
+  const handleCompoundAccrued = (providerId: string) => {
+    const opt = stakingOptions.find((o: any) => o.id === providerId);
+    if (!opt || !opt.accruedRewardsSol || opt.accruedRewardsSol <= 0) return;
+
+    const accruedAmount = opt.accruedRewardsSol;
+    setStakingOptions((prev: any[]) =>
+      prev.map((o: any) =>
+        o.id === providerId
+          ? {
+              ...o,
+              stakedAmount: Number((o.stakedAmount + accruedAmount).toFixed(4)),
+              accruedRewardsSol: 0,
+              totalCompoundCount: (o.totalCompoundCount || 0) + 1,
+            }
+          : o
+      )
+    );
+
+    const newTx: TransactionRecord = {
+      id: `tx-${Date.now()}`,
+      type: 'stake',
+      symbol: `Auto-Stake: ${accruedAmount.toFixed(4)} SOL Compounded`,
+      amount: accruedAmount,
+      amountUsd: accruedAmount * solToken.usdPrice,
+      fromAddress: `${providerId.toUpperCase()}RewardsVault`,
+      toAddress: `${providerId.toUpperCase()}StakePool11111111111111111111111`,
+      timestamp: Date.now(),
+      status: 'confirmed',
+      signature: '5kReStake4CompoundingRewards111111111111111111111',
+      feeSol: 0.000005,
+    };
+    setTransactions((prev) => [newTx, ...prev]);
+  };
+
   const handleOpenPerpPosition = (posData: Omit<PerpPosition, 'id' | 'timestamp'>) => {
     setTokens((prev) =>
       prev.map((t) => (t.symbol === 'USDC' ? { ...t, balance: Math.max(0, t.balance - posData.collateralUsd) } : t))
@@ -430,6 +503,73 @@ export default function App() {
     );
 
     setPerpPositions((prev) => prev.filter((p) => p.id !== posId));
+  };
+
+  const handleMintAvatar = (avatarId: string, paymentMethod: 'usdc' | 'sol' | 'kpgm' | 'card') => {
+    const avatar = avatars.find((a) => a.id === avatarId);
+    if (!avatar) return;
+
+    // Deduct 25 cents payment method
+    if (paymentMethod === 'usdc') {
+      setTokens((prev) =>
+        prev.map((t) => (t.symbol === 'USDC' ? { ...t, balance: Math.max(0, t.balance - 0.25) } : t))
+      );
+    } else if (paymentMethod === 'sol') {
+      setTokens((prev) =>
+        prev.map((t) => (t.symbol === 'SOL' ? { ...t, balance: Math.max(0, t.balance - 0.00135) } : t))
+      );
+    } else if (paymentMethod === 'kpgm') {
+      setTokens((prev) =>
+        prev.map((t) => (t.symbol === 'KPGM' ? { ...t, balance: Math.max(0, t.balance - 25) } : t))
+      );
+    }
+
+    const txSig = '5' + Math.random().toString(36).substring(2, 10) + 'SolMint25c' + Date.now().toString(36);
+
+    // Update avatar state
+    setAvatars((prev) =>
+      prev.map((av) =>
+        av.id === avatarId
+          ? {
+              ...av,
+              isMinted: true,
+              mintedAt: Date.now(),
+              txSignature: txSig,
+            }
+          : av
+      )
+    );
+
+    // Record confirmed mint transaction
+    const newTx: TransactionRecord = {
+      id: `tx-${Date.now()}`,
+      type: 'mint',
+      symbol: `NFT: ${avatar.name} (25¢)`,
+      amount: 0.25,
+      amountUsd: 0.25,
+      fromAddress: activeAccount.address,
+      toAddress: avatar.mintAddress,
+      timestamp: Date.now(),
+      status: 'confirmed',
+      signature: txSig,
+      feeSol: 0.000005,
+    };
+    setTransactions((prev) => [newTx, ...prev]);
+  };
+
+  const handleEquipAvatar = (theme: AvatarTheme) => {
+    setAccounts((prev) =>
+      prev.map((acc) => (acc.id === activeAccountId ? { ...acc, avatarTheme: theme } : acc))
+    );
+    setAvatars((prev) =>
+      prev.map((av) => ({ ...av, isEquipped: av.theme === theme }))
+    );
+  };
+
+  const handleAssignToCard = (avatarId: string, cardId: number) => {
+    const avatar = avatars.find((a) => a.id === avatarId);
+    if (!avatar) return;
+    setCards((prev) => assignAvatarToCard(prev, cardId, avatar));
   };
 
   const handleCreateNewAccount = () => {
@@ -480,6 +620,8 @@ export default function App() {
         onOpenSupport={() => setActiveTab('support')}
         onOpenReceive={() => setIsReceiveOpen(true)}
         onOpenAccountModal={() => setIsAccountModalOpen(true)}
+        onOpenGallery={() => setActiveTab('gallery')}
+        onOpenVideo={() => setIsVideoModalOpen(true)}
         totalBalanceUsd={tokens.reduce((acc, t) => acc + t.balance * t.usdPrice, 0)}
         isLocked={isLocked}
         onToggleLock={() => (isLocked ? setIsBiometricModalOpen(true) : handleLock())}
@@ -495,7 +637,8 @@ export default function App() {
             perpPositions={perpPositions}
             stakingOptions={stakingOptions}
             nfts={INITIAL_NFTS}
-            cards={MYSTERYUM_CARDS}
+            cards={cards}
+            avatars={avatars}
             transactions={transactions}
             currency={currency}
             language={language}
@@ -504,6 +647,7 @@ export default function App() {
             priceAlerts={priceAlerts}
             triggeredAlerts={triggeredAlerts}
             onOpenPriceAlertsModal={() => setIsPriceAlertsModalOpen(true)}
+            onOpenGallery={() => setActiveTab('gallery')}
             onDismissTriggeredAlert={handleDismissTriggeredAlert}
             onSimulatePriceShock={handleSimulatePriceShock}
             onOpenSend={(sym) => {
@@ -528,19 +672,49 @@ export default function App() {
           />
         )}
 
+        {/* 25¢ NFT Avatar Mint & Customization Gallery */}
+        {activeTab === 'gallery' && (
+          <AvatarGalleryView
+            avatars={avatars}
+            cards={cards}
+            account={activeAccount}
+            currency={currency}
+            language={language}
+            onMintAvatar={handleMintAvatar}
+            onEquipAvatar={handleEquipAvatar}
+            onAssignToCard={handleAssignToCard}
+          />
+        )}
+
         {activeTab === 'swap' && (
           <SwapView
             tokens={tokens}
             onExecuteSwap={handleExecuteSwap}
             defaultFrom={swapDefaultFrom}
+            avatarTheme={activeAccount.avatarTheme}
+            onOpenGallery={() => setActiveTab('gallery')}
           />
         )}
 
-        {activeTab === 'aiAgent' && <AiAgentView tokens={tokens} />}
+        {activeTab === 'chat' && (
+          <ChatView
+            account={activeAccount}
+            language={language}
+            tokens={tokens}
+          />
+        )}
 
-        {activeTab === 'chat' && <ChatView account={activeAccount} />}
+        {activeTab === 'explore' && <ExploreView onOpenGallery={() => setActiveTab('gallery')} />}
 
-        {activeTab === 'explore' && <ExploreView />}
+        {activeTab === 'portal' && (
+          <EcosystemPortalView
+            onOpenGallery={() => setActiveTab('gallery')}
+            onOpenSwap={() => setActiveTab('swap')}
+            onOpenExplore={() => setActiveTab('explore')}
+            language={language}
+            activeAvatarTheme={activeAccount.avatarTheme}
+          />
+        )}
 
         {activeTab === 'settings' && (
           <SettingsView
@@ -553,6 +727,7 @@ export default function App() {
             onLanguageChange={setLanguage}
             onResetWallet={handleResetWallet}
             onOpenSupport={() => setActiveTab('support')}
+            onOpenGallery={() => setActiveTab('gallery')}
             onTriggerLock={handleLock}
           />
         )}
@@ -606,6 +781,8 @@ export default function App() {
           solBalance={solToken.balance}
           onClose={() => setIsStakeOpen(false)}
           onStake={handleStake}
+          onUpdateAutoStake={handleUpdateAutoStake}
+          onCompoundAccrued={handleCompoundAccrued}
           defaultProviderId={stakeDefaultProvider}
         />
       )}
@@ -627,6 +804,7 @@ export default function App() {
           onSelectAccount={(acc) => setActiveAccountId(acc.id)}
           onCreateNewAccount={handleCreateNewAccount}
           onRestoreFromPhrase={handleRestoreFromPhrase}
+          onOpenGallery={() => setActiveTab('gallery')}
           onClose={() => setIsAccountModalOpen(false)}
         />
       )}
@@ -653,6 +831,17 @@ export default function App() {
         onSimulatePriceShock={handleSimulatePriceShock}
         isLiveTickerEnabled={isLiveTickerEnabled}
         onToggleLiveTicker={() => setIsLiveTickerEnabled((prev) => !prev)}
+      />
+
+      {/* Official Greeting Promo Video Modal */}
+      <WelcomeVideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        language={language}
+        onExploreFeatures={(tab) => {
+          setActiveTab(tab);
+          setIsVideoModalOpen(false);
+        }}
       />
     </div>
   );

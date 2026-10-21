@@ -3,10 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MYSTERYUM WALLET SOLANA</title>
-    <meta name="description" content="Next-generation non-custodial Solana Web3 wallet with token swaps, tokenized xStocks, perpetuals, staking, AI Agent market auditor, encrypted chat, and official mobile publishing guides." />
-    <meta property="og:title" content="MYSTERYUM WALLET SOLANA" />
-    <meta property="og:description" content="Next-generation non-custodial Solana Web3 wallet with token swaps, tokenized xStocks, perpetuals, staking, AI Agent market auditor, encrypted chat, and official mobile publishing guides." />
+    <script>
+      (function() {
+        // Immediate handler to capture and drop external browser extension inpage errors
+        window.addEventListener('error', function(e) {
+          var msg = (e && e.message) ? String(e.message) : '';
+          var src = (e && e.filename) ? String(e.filename) : '';
+          if (
+            msg.indexOf('MetaMask') !== -1 ||
+            msg.indexOf('Failed to connect') !== -1 ||
+            src.indexOf('chrome-extension://') !== -1 ||
+            src.indexOf('nkbihfbeogaeaoehlefnkodbefgpgknn') !== -1
+          ) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            if (e.stopPropagation) e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          var reason = (e && e.reason) ? String(e.reason && e.reason.message ? e.reason.message : e.reason) : '';
+          if (
+            reason.indexOf('MetaMask') !== -1 ||
+            reason.indexOf('Failed to connect') !== -1 ||
+            reason.indexOf('chrome-extension://') !== -1
+          ) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            if (e.stopPropagation) e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
+    <title>ECOSYSTEM WALLET SOLANA</title>
+    <meta name="description" content="Next-generation non-custodial Solana Web3 ecosystem wallet with token swaps, 25¢ NFT avatars, tokenized xStocks, perpetuals, liquid staking, specialized AI Agent market auditor, encrypted chat, and decentralized gateway." />
+    <meta property="og:title" content="ECOSYSTEM WALLET SOLANA" />
+    <meta property="og:description" content="Next-generation non-custodial Solana Web3 ecosystem wallet with token swaps, 25¢ NFT avatars, tokenized xStocks, perpetuals, liquid staking, specialized AI Agent market auditor, encrypted chat, and decentralized gateway." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { X, Flame, Shield, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import {
+  X,
+  Flame,
+  Shield,
+  ArrowUpRight,
+  CheckCircle2,
+  RefreshCw,
+  Zap,
+  Sparkles,
+  Sliders,
+  RotateCcw,
+  Info,
+} from 'lucide-react';
 import { StakingOption } from '../../types/wallet';
 
 interface StakeModalProps {
@@ -7,6 +19,8 @@ interface StakeModalProps {
   solBalance: number;
   onClose: () => void;
   onStake: (providerId: string, amount: number) => void;
+  onUpdateAutoStake?: (providerId: string, enabled: boolean, thresholdSol: number) => void;
+  onCompoundAccrued?: (providerId: string) => void;
   defaultProviderId?: string;
 }
 
@@ -15,14 +29,26 @@ export const StakeModal: React.FC<StakeModalProps> = ({
   solBalance,
   onClose,
   onStake,
+  onUpdateAutoStake,
+  onCompoundAccrued,
   defaultProviderId = 'jito',
 }) => {
   const [selectedId, setSelectedId] = useState(defaultProviderId);
   const [amountStr, setAmountStr] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [compoundSuccessMsg, setCompoundSuccessMsg] = useState<string | null>(null);
 
   const activeOption = stakingOptions.find((o) => o.id === selectedId) || stakingOptions[0];
+  const [autoStakeEnabled, setAutoStakeEnabled] = useState<boolean>(Boolean(activeOption.autoStakeEnabled));
+  const [autoStakeThreshold, setAutoStakeThreshold] = useState<number>(activeOption.autoStakeThreshold ?? 0.05);
+
+  // Sync state when selecting a different provider
+  React.useEffect(() => {
+    setAutoStakeEnabled(Boolean(activeOption.autoStakeEnabled));
+    setAutoStakeThreshold(activeOption.autoStakeThreshold ?? 0.05);
+  }, [activeOption.id, activeOption.autoStakeEnabled, activeOption.autoStakeThreshold]);
+
   const amount = parseFloat(amountStr) || 0;
   const maxAvailable = Math.max(0, solBalance - 0.01); // leave for rent/fees
   const canStake = amount > 0 && amount <= maxAvailable && !isSubmitting;
@@ -31,6 +57,28 @@ export const StakeModal: React.FC<StakeModalProps> = ({
 
   const handleMax = () => {
     setAmountStr(maxAvailable.toFixed(4));
+  };
+
+  const handleToggleAutoStake = (enabled: boolean) => {
+    setAutoStakeEnabled(enabled);
+    if (onUpdateAutoStake) {
+      onUpdateAutoStake(activeOption.id, enabled, autoStakeThreshold);
+    }
+  };
+
+  const handleThresholdChange = (newThreshold: number) => {
+    setAutoStakeThreshold(newThreshold);
+    if (onUpdateAutoStake) {
+      onUpdateAutoStake(activeOption.id, autoStakeEnabled, newThreshold);
+    }
+  };
+
+  const handleManualReStake = () => {
+    if (!onCompoundAccrued || (activeOption.accruedRewardsSol ?? 0) <= 0) return;
+    const reStaked = activeOption.accruedRewardsSol!;
+    onCompoundAccrued(activeOption.id);
+    setCompoundSuccessMsg(`Re-staked +${reStaked.toFixed(4)} SOL back into ${activeOption.token}!`);
+    setTimeout(() => setCompoundSuccessMsg(null), 3000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -157,6 +205,115 @@ export const StakeModal: React.FC<StakeModalProps> = ({
                   {activeOption.type === 'liquid' ? 'Instant swap via DEX' : '1 Epoch (~2 days)'}
                 </span>
               </div>
+            </div>
+
+            {/* Auto-Staking & Auto-Compound Rewards Card */}
+            <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/40 via-slate-900/70 to-purple-950/40 p-3.5 space-y-3">
+              {/* Header with Toggle Switch */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/40">
+                    <RefreshCw className={`h-3.5 w-3.5 ${autoStakeEnabled ? 'animate-spin' : ''}`} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-white">Auto-Staking (Auto-Compound)</span>
+                      <span className="rounded bg-purple-950 border border-purple-500/30 px-1 py-0.2 text-[9px] font-mono font-bold text-purple-300">
+                        SMART POOL
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Re-stake accrued rewards back into {activeOption.name}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Interactive Toggle Switch */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleAutoStake(!autoStakeEnabled)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    autoStakeEnabled ? 'bg-purple-600' : 'bg-slate-800'
+                  }`}
+                  role="switch"
+                  aria-checked={autoStakeEnabled}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      autoStakeEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Threshold Configuration & Accrued Status when Enabled */}
+              {autoStakeEnabled && (
+                <div className="pt-2 border-t border-white/5 space-y-2.5 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Re-stake Threshold:</span>
+                    <div className="flex items-center gap-1">
+                      {[0.01, 0.05, 0.1, 0.25].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => handleThresholdChange(val)}
+                          className={`rounded-lg px-2 py-0.5 text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                            autoStakeThreshold === val
+                              ? 'bg-purple-600 text-white shadow-sm'
+                              : 'bg-black/40 text-slate-400 hover:text-white border border-white/5'
+                          }`}
+                        >
+                          {val} SOL
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Accrued Yield Status & Immediate Compound Action */}
+                  <div className="flex items-center justify-between rounded-xl bg-black/40 border border-white/5 p-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Accrued Rewards:</span>
+                      <span className="font-mono font-bold text-emerald-400">
+                        +{(activeOption.accruedRewardsSol ?? 0).toFixed(4)} SOL
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {activeOption.accruedRewardsSol ?? 0 >= autoStakeThreshold ? (
+                          <span className="text-emerald-400 font-bold">Ready to Compound</span>
+                        ) : (
+                          <span>Threshold: {autoStakeThreshold} SOL</span>
+                        )}
+                      </span>
+
+                      {(activeOption.accruedRewardsSol ?? 0) > 0 && onCompoundAccrued && (
+                        <button
+                          type="button"
+                          onClick={handleManualReStake}
+                          className="flex items-center gap-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 px-2 py-1 text-[10px] font-bold text-emerald-300 transition-colors cursor-pointer"
+                          title="Manually re-stake accrued rewards right now"
+                        >
+                          <Zap className="h-3 w-3 text-emerald-400" />
+                          <span>Re-stake Now</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {compoundSuccessMsg && (
+                    <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/60 p-2 text-xs font-mono text-emerald-300">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <span>{compoundSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                    <span>Compounded so far: {activeOption.totalCompoundCount ?? 0} times</span>
+                    <span>Pool: {activeOption.token}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit */}

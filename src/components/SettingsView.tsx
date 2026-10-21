@@ -14,12 +14,15 @@ import {
   ExternalLink,
   LifeBuoy,
   Fingerprint,
-  Scan,
   Lock,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 import { WalletAccount, NetworkId, LanguageCode } from '../types/wallet';
 import { FIAT_CURRENCIES } from '../utils/currencies';
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from '../utils/i18n';
+import { AvatarArtwork } from './AvatarArtwork';
+import { AvatarBackground } from './AvatarBackground';
 
 interface SettingsViewProps {
   account: WalletAccount;
@@ -31,6 +34,7 @@ interface SettingsViewProps {
   onLanguageChange: (lang: LanguageCode) => void;
   onResetWallet: () => void;
   onOpenSupport: () => void;
+  onOpenGallery?: () => void;
   onTriggerLock?: () => void;
 }
 
@@ -44,6 +48,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onLanguageChange,
   onResetWallet,
   onOpenSupport,
+  onOpenGallery,
   onTriggerLock,
 }) => {
   const [showSeed, setShowSeed] = useState(false);
@@ -68,8 +73,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-28 text-slate-200">
-      <div className="flex items-center gap-3">
+    <div className="relative mx-auto max-w-2xl space-y-6 pb-28 text-slate-200">
+      {/* Ambient Avatar Background Watermark */}
+      <AvatarBackground theme={account.avatarTheme || 'cyber-king'} opacity={0.06} position="top-right" />
+
+      <div className="relative z-10 flex items-center gap-3">
         <div className="rounded-2xl bg-cyan-950/80 p-2.5 border border-cyan-500/30 text-cyan-400">
           <Settings className="h-6 w-6" />
         </div>
@@ -78,6 +86,54 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <p className="text-xs text-slate-400">Manage security, networks, currency, and local vault</p>
         </div>
       </div>
+
+      {/* NFT Avatar & Virtual Card Identity Section */}
+      <section className="rounded-3xl border border-cyan-500/30 bg-gradient-to-r from-[#0d1322] via-[#101b33] to-[#0a101d] p-5 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-cyan-400" />
+            <h3 className="font-heading text-sm font-bold text-white uppercase tracking-wider">
+              Avatar & Card Identity
+            </h3>
+          </div>
+          <span className="rounded-full bg-cyan-950/80 border border-cyan-500/30 px-2.5 py-0.5 text-[10px] font-mono text-cyan-300">
+            25¢ Solana NFT
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 rounded-2xl border border-white/10 bg-slate-900/80 p-4">
+          <div className="h-20 w-20 rounded-2xl overflow-hidden border-2 border-cyan-400/60 bg-black shadow-xl shrink-0">
+            <AvatarArtwork theme={account.avatarTheme || 'cyber-king'} size="100%" showCrownGlow={false} />
+          </div>
+
+          <div className="space-y-1 text-center sm:text-left flex-1">
+            <p className="text-sm font-bold text-white font-heading">
+              Active Avatar: {account.avatarTheme ? account.avatarTheme.replace('-', ' ').toUpperCase() : 'CYBER KING'}
+            </p>
+            <p className="text-xs text-slate-400">
+              Synced across your Solana account and 8 Ecosystem Virtual Cards
+            </p>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
+              <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
+                Verified On-Chain
+              </span>
+              <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] font-mono text-cyan-300 border border-cyan-500/30">
+                Fixed 25¢ Mint
+              </span>
+            </div>
+          </div>
+
+          {onOpenGallery && (
+            <button
+              onClick={onOpenGallery}
+              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 hover:opacity-95 px-4 py-2.5 text-xs font-extrabold text-black transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Avatar Gallery (25¢)</span>
+            </button>
+          )}
+        </div>
+      </section>
 
       {/* Security & Vault Section */}
       <section className="rounded-3xl border border-white/10 bg-[#0f1420]/80 p-5 space-y-4">
@@ -94,7 +150,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div>
               <p className="text-xs font-bold text-white">12-Word Secret Recovery Phrase</p>
               <p className="text-[11px] text-slate-400">
-                Never share this with anyone. Mysteryum support will never ask for it.
+                Never share this with anyone. Ecosystem support will never ask for it.
               </p>
             </div>
             <button
@@ -344,7 +400,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </section>
 
       <div className="text-center text-xs text-slate-500 pt-2">
-        MYSTERYUM WALLET SOLANA · Version 2.4.0 (Build 41907) · support@mysteryum.com
+        ECOSYSTEM WALLET SOLANA · Version 2.4.0 (Build 41907) · support@mysteryum.io
       </div>
     </div>
   );

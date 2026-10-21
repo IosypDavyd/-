@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, KeyRound, Check, Wallet, Shield } from 'lucide-react';
+import { X, Plus, KeyRound, Check, Wallet, Shield, Sparkles } from 'lucide-react';
 import { WalletAccount } from '../../types/wallet';
 import { shortenAddress, generateSeedPhrase, deriveSolanaAddressFromSeed } from '../../utils/crypto';
+import { AvatarArtwork } from '../AvatarArtwork';
 
 interface AccountModalProps {
   accounts: WalletAccount[];
@@ -9,6 +10,7 @@ interface AccountModalProps {
   onSelectAccount: (acc: WalletAccount) => void;
   onCreateNewAccount: () => void;
   onRestoreFromPhrase: (phrase: string[]) => void;
+  onOpenGallery?: () => void;
   onClose: () => void;
 }
 
@@ -18,6 +20,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onSelectAccount,
   onCreateNewAccount,
   onRestoreFromPhrase,
+  onOpenGallery,
   onClose,
 }) => {
   const [isRestoring, setIsRestoring] = useState(false);
@@ -108,26 +111,66 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       onSelectAccount(acc);
                       onClose();
                     }}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left cursor-pointer ${
                       isActive
-                        ? 'bg-cyan-950/40 border-cyan-500/50 text-white'
-                        : 'bg-slate-900/50 border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                        ? 'bg-cyan-950/50 border-cyan-500/60 text-white shadow-md'
+                        : 'bg-slate-900/60 border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl overflow-hidden border border-cyan-400/40 bg-black shrink-0 shadow">
+                        <AvatarArtwork theme={acc.avatarTheme || 'cyber-king'} size="100%" showCrownGlow={false} />
+                      </div>
                       <div>
-                        <p className="text-xs font-bold text-white">{acc.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-white">{acc.name}</p>
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </div>
                         <p className="text-[11px] font-mono text-slate-400">
                           {shortenAddress(acc.address, 6)}
                         </p>
                       </div>
                     </div>
-                    {isActive && <Check className="h-4 w-4 text-cyan-400" />}
+                    {isActive ? (
+                      <span className="flex items-center gap-1 text-[11px] font-mono font-bold text-cyan-300 bg-cyan-900/40 px-2 py-0.5 rounded-md border border-cyan-500/30">
+                        <Check className="h-3.5 w-3.5 text-cyan-400" />
+                        <span>Active</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 font-mono">Select</span>
+                    )}
                   </button>
                 );
               })}
             </div>
+
+            {/* Avatar Gallery 25¢ Shortcut Banner */}
+            {onOpenGallery && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenGallery();
+                }}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 hover:from-cyan-900/70 hover:to-indigo-900/70 transition-all text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-cyan-500/20 p-1 text-cyan-400">
+                    <Sparkles className="h-4 w-4 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      NFT Avatar Mint Gallery
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Mint official Solana avatars for 25¢ ($0.25 USD)
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                  25¢ MINT
+                </span>
+              </button>
+            )}
 
             <div className="flex gap-2 pt-2 border-t border-white/10">
               <button

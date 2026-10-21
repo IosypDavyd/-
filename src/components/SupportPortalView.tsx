@@ -238,9 +238,9 @@ git push -u origin main
               play.google.com/console
               <ExternalLink className="h-3 w-3" />
             </a>. Publisher name:{' '}
-            <strong className="text-white">MYSTERYUM WALLET</strong>, email:{' '}
-            <a href="mailto:support@mysteryum.com" className="text-cyan-400 underline">
-              support@mysteryum.com
+            <strong className="text-white">ECOSYSTEM WALLET SOLANA</strong>, email:{' '}
+            <a href="mailto:support@mysteryum.io" className="text-cyan-400 underline">
+              support@mysteryum.io
             </a>.
           </li>
           <li>
@@ -295,7 +295,7 @@ git push -u origin main
             Press <strong className="text-white">Create new…</strong> — this is your signing key. Set a file name (e.g. <code className="font-mono text-cyan-300">mysteryum-key</code>) and a password. Be sure to write the password down and keep the key file — without them you cannot ship updates!
           </li>
           <li>
-            Fill in the form (name <strong className="text-white">MYSTERYUM WALLET</strong>) → Next → choose release → Create.
+            Fill in the form (name <strong className="text-white">ECOSYSTEM WALLET SOLANA</strong>) → Next → choose release → Create.
           </li>
           <li>
             The finished file is here:{' '}
@@ -304,17 +304,17 @@ git push -u origin main
             </code>.
           </li>
           <li>
-            In Play Console: <strong className="text-white">Create app</strong> → name <strong className="text-white">MYSTERYUM WALLET</strong>, language English, type App, Free.
+            In Play Console: <strong className="text-white">Create app</strong> → name <strong className="text-white">ECOSYSTEM WALLET SOLANA</strong>, language English, type App, Free.
           </li>
           <li>
             Copy the descriptions from <strong className="text-cyan-400">STORE_SUBMISSION.md</strong>, add the icon and screenshots, and enter the privacy page:{' '}
             <a
-              href="https://mysteryum-wallet.lovable.app/privacy"
+              href="https://mysteryum.io/privacy"
               target="_blank"
               rel="noreferrer"
               className="text-cyan-400 underline break-all inline-flex items-center gap-0.5"
             >
-              https://mysteryum-wallet.lovable.app/privacy
+              https://mysteryum.io/privacy
               <ExternalLink className="h-3 w-3" />
             </a>.
           </li>
@@ -376,7 +376,7 @@ git push -u origin main
             >
               appstoreconnect.apple.com
               <ExternalLink className="h-3 w-3" />
-            </a>: My Apps → “+” → New App: name <strong className="text-white">MYSTERYUM WALLET</strong>, Bundle ID{' '}
+            </a>: My Apps → “+” → New App: name <strong className="text-white">ECOSYSTEM WALLET SOLANA</strong>, Bundle ID{' '}
             <code className="rounded bg-slate-900 px-1.5 py-0.5 font-mono text-cyan-300">
               com.keypowergrailmystery.wallet
             </code>.
@@ -384,12 +384,12 @@ git push -u origin main
           <li>
             Fill in the description (texts in STORE_SUBMISSION.md), privacy page{' '}
             <a
-              href="https://mysteryum-wallet.lovable.app/privacy"
+              href="https://mysteryum.io/privacy"
               target="_blank"
               rel="noreferrer"
               className="text-cyan-400 underline break-all inline-flex items-center gap-0.5"
             >
-              https://mysteryum-wallet.lovable.app/privacy
+              https://mysteryum.io/privacy
               <ExternalLink className="h-3 w-3" />
             </a>{' '}
             → Submit for Review. The review takes 1–2 days.
@@ -422,10 +422,10 @@ git push -u origin main
         <p className="text-sm text-slate-400">
           Questions and help:{' '}
           <a
-            href="mailto:support@mysteryum.com"
+            href="mailto:support@mysteryum.io"
             className="text-cyan-400 hover:text-cyan-300 underline font-medium"
           >
-            support@mysteryum.com
+            support@mysteryum.io
           </a>
         </p>
       </div>
